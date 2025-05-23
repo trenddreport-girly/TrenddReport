@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Details</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: transparent;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="text-xl font-bold mb-4">{{ customer_name|upper }}'s Last Order</h2>
+        
+        <p class="mb-4"><strong>Order Date:</strong> {{ order_date }}</p>
+        
+        <div class="mb-4">
+            <p class="font-medium">{{ items|length }} Item{{ "s" if items|length != 1 else "" }} in Last Order:</p>
+            <ul class="list-none ml-5 mt-2 space-y-2">
+                {% for item in items %}
+                <li>
+                    <span style="display:inline-block;margin-right:5px;">•</span> {{ item }}
+                </li>
+                {% else %}
+                <li>
+                    <span style="display:inline-block;margin-right:5px;">•</span> No specific items found
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <div class="mt-5 text-center">
+            <button onclick="parent.closeModal()" class="bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700">
+                Close
+            </button>
+        </div>
+    </div>
+</body>
+</html>

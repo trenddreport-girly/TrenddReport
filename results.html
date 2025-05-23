@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trendd - Analysis Results</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow: auto;
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+        }
+        
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <nav class="bg-purple-600 p-4 shadow-md">
+        <div class="container mx-auto">
+            <h1 class="text-white text-2xl font-bold">Trendd</h1>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-4">
+        <div class="bg-white rounded-lg shadow-lg p-6 max-w-6xl mx-auto">
+            {% if report_type == "dormant_customers" %}
+                <h2 class="text-2xl font-semibold mb-6">Dormant Customer Analysis</h2>
+                
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+                    <p class="text-lg">
+                        <span class="font-bold">Analysis:</span> Customers who ordered during {{ result.target_month }} and haven't ordered since.
+                    </p>
+                    <p class="mt-2">
+                        <span class="font-bold">Total dormant customers:</span> {{ result.total_count }}
+                    </p>
+                </div>
+
+                {% if result.data_limitations %}
+                <div class="mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4">
+                    <p class="font-medium text-yellow-800">Data Range Notice</p>
+                    <p class="text-yellow-700">{{ result.data_limitations.warning }}</p>
+                    <p class="text-yellow-700 mt-1">
+                        <span class="font-medium">Data range in this report:</span> 
+                        {{ result.data_limitations.data_from_date }} to {{ result.data_limitations.data_to_date }}
+                    </p>
+                </div>
+                {% endif %}
+
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold mb-4">Dormant Customers</h3>
+                    <p class="text-md text-blue-700 mb-3 font-semibold bg-blue-50 p-2 rounded border border-blue-100 inline-block">
+                        👉 Click on a customer name to view details
+                    </p>
+                    
+                    <!-- Customer Table -->
+                    <table class="min-w-full bg-white border border-gray-300">
+                        <thead>
+                            <tr>
+                                <th class="py-2 px-4 border-b text-left">Customer</th>
+                                <th class="py-2 px-4 border-b text-left">Last Order Date</th>
+                                <th class="py-2 px-4 border-b text-left">Last Order Amount</th>
+                                <th class="py-2 px-4 border-b text-left">Days Since Order</th>
+                                <th class="py-2 px-4 border-b text-left">Total Orders</th>
+                                <th class="py-2 px-4 border-b text-left">Lifetime Sales</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for customer, data in result.dormant_customers.items() %}
+                                <tr class="hover:bg-gray-50">
+                                    <td class="py-2 px-4 border-b">
+                                        <button 
+                                            onclick="showModal('{{ customer|replace("'", "\\'") }}')"
+                                            class="text-blue-600 hover:underline text-left">
+                                            {{ customer }}
+                                        </button>
+                                    </td>
+                                    <td class="py-2 px-4 border-b">
+                                        {% if data.last_order_date %}
+                                            {% if data.last_order_date is string %}
+                                                {{ data.last_order_date }}
+                                            {% else %}
+                                                {{ data.last_order_date.strftime('%m/%d/%Y') }}
+                                            {% endif %}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-2 px-4 border-b">${{ "%.2f"|format(data.last_order_amount) }}</td>
+                                    <td class="py-2 px-4 border-b">{{ data.days_since_order }}</td>
+                                    <td class="py-2 px-4 border-b">{{ data.total_orders }}</td>
+                                    <td class="py-2 px-4 border-b">${{ "%.2f"|format(data.total_spent) }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold mb-4">AI Insights</h3>
+                    <div class="bg-purple-50 border-l-4 border-purple-500 p-4">
+                        {% if result.ai_insights %}
+                            <!-- Observations -->
+                            {% if result.ai_insights.observations %}
+                                {% for observation in result.ai_insights.observations %}
+                                    <p class="mb-3">
+                                        <span class="font-bold">Observation:</span> {{ observation }}
+                                    </p>
+                                {% endfor %}
+                            {% endif %}
+                            
+                            <!-- Recommendations -->
+                            {% if result.ai_insights.recommendations %}
+                                {% for recommendation in result.ai_insights.recommendations %}
+                                    <p class="mb-3">
+                                        <span class="font-bold">Recommendation:</span> {{ recommendation }}
+                                    </p>
+                                {% endfor %}
+                            {% endif %}
+                            
+                            <!-- Actions -->
+                            {% if result.ai_insights.actions %}
+                                <div class="mt-4">
+                                    <p class="font-bold mb-2">Suggested actions:</p>
+                                    <ul class="list-disc pl-5 space-y-1">
+                                        {% for action in result.ai_insights.actions %}
+                                            <li>{{ action }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <!-- Fallback if no AI insights are provided -->
+                            <p class="mb-3">
+                                <span class="font-bold">Observation:</span> You have {{ result.total_count }} customers who haven't ordered since {{ result.target_month }}.
+                            </p>
+                            <p class="mb-3">
+                                <span class="font-bold">Recommendation:</span> Consider a targeted re-engagement campaign for these dormant customers, particularly focusing on your high-value customers who spent over $500 lifetime.
+                            </p>
+                            <div class="mt-4">
+                                <p class="font-bold mb-2">Suggested actions:</p>
+                                <ul class="list-disc pl-5 space-y-1">
+                                    <li>Send a personalized email to high-value dormant customers (Lifetime Sales > $1000) with a special offer based on their purchase history</li>
+                                    <li>Create a "We miss you" campaign with a time-limited discount for mid-tier customers ($500-$1000)</li>
+                                    <li>Monitor which re-engagement strategies are most effective to refine future campaigns</li>
+                                </ul>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-6 mb-6">
+                    <h3 class="text-xl font-semibold mb-4">Re-engagement Email Templates</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Premium Customer Email Template -->
+                        <div class="border rounded-lg p-4">
+                            <h4 class="font-bold text-lg mb-2">Premium Customer Template</h4>
+                            <p class="text-sm text-gray-600 mb-2">For customers with lifetime value over $1000</p>
+                            <div class="bg-gray-50 p-3 rounded text-sm">
+                                <p><strong>Subject:</strong> We miss you, [Customer] - Special VIP offer inside</p>
+                                <p class="mt-2"><strong>Email:</strong></p>
+                                <p class="mt-1">Dear [Customer],</p>
+                                <p class="mt-1">We've noticed it's been a while since your last purchase with us on [Date].</p>
+                                <p class="mt-1">As one of our most valued customers, we'd like to offer you a special 15% discount on your next order, plus complimentary shipping.</p>
+                                <p class="mt-1">This VIP offer is valid until [Date + 30 days].</p>
+                                <p class="mt-1">Best regards,<br>[Your Name]</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Mid-tier Customer Email Template -->
+                        <div class="border rounded-lg p-4">
+                            <h4 class="font-bold text-lg mb-2">Mid-tier Customer Template</h4>
+                            <p class="text-sm text-gray-600 mb-2">For customers with lifetime value $500-$1000</p>
+                            <div class="bg-gray-50 p-3 rounded text-sm">
+                                <p><strong>Subject:</strong> [Customer], we haven't seen you in a while</p>
+                                <p class="mt-2"><strong>Email:</strong></p>
+                                <p class="mt-1">Dear [Customer],</p>
+                                <p class="mt-1">It's been a few months since your last order with us on [Date].</p>
+                                <p class="mt-1">We'd love to welcome you back with a 10% discount on your next purchase.</p>
+                                <p class="mt-1">This offer is valid until [Date + 30 days].</p>
+                                <p class="mt-1">Best regards,<br>[Your Name]</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Standard Customer Email Template -->
+                        <div class="border rounded-lg p-4">
+                            <h4 class="font-bold text-lg mb-2">Standard Customer Template</h4>
+                            <p class="text-sm text-gray-600 mb-2">For customers with lifetime value under $500</p>
+                            <div class="bg-gray-50 p-3 rounded text-sm">
+                                <p><strong>Subject:</strong> Reconnect with us</p>
+                                <p class="mt-2"><strong>Email:</strong></p>
+                                <p class="mt-1">Dear [Customer],</p>
+                                <p class="mt-1">We noticed you haven't placed an order with us since [Date].</p>
+                                <p class="mt-1">We'd like to offer you a 5% discount on your next purchase.</p>
+                                <p class="mt-1">This offer is valid until [Date + 30 days].</p>
+                                <p class="mt-1">Best regards,<br>[Your Name]</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-8">
+                    <a href="/" class="bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700">
+                        Run Another Analysis
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Modal Overlay with iFrame -->
+    <div id="modalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <div id="modalIframeContainer">
+                <iframe id="customerDetailsFrame" src="" style="width:100%; border:none; overflow:hidden;" onload="resizeIframe(this)"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showModal(customerName) {
+            document.getElementById('customerDetailsFrame').src = '/customer_details/' + encodeURIComponent(customerName);
+            document.getElementById('modalOverlay').style.display = 'block';
+        }
+        
+        function closeModal() {
+            document.getElementById('modalOverlay').style.display = 'none';
+        }
+        
+        function resizeIframe(iframe) {
+            // Set iframe height to match its content
+            iframe.style.height = iframe.contentWindow.document.body.scrollHeight + 'px';
+        }
+        
+        // Close modal when clicking outside the content
+        window.onclick = function(event) {
+            var modalOverlay = document.getElementById('modalOverlay');
+            if (event.target == modalOverlay) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>
