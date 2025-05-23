@@ -52,7 +52,7 @@
                 
                 <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
                     <p class="text-lg">
-                        <span class="font-bold">Analysis:</span> Customers who ordered during {{ result.target_month }} and haven't ordered since.
+                        <span class="font-bold">Analysis:</span> {{ result.target_month }}
                     </p>
                     <p class="mt-2">
                         <span class="font-bold">Total dormant customers:</span> {{ result.total_count }}
@@ -64,8 +64,7 @@
                     <p class="font-medium text-yellow-800">Data Range Notice</p>
                     <p class="text-yellow-700">{{ result.data_limitations.warning }}</p>
                     <p class="text-yellow-700 mt-1">
-                        <span class="font-medium">Data range in this report:</span> 
-                        {{ result.data_limitations.data_from_date }} to {{ result.data_limitations.data_to_date }}
+                        <span class="font-medium">{{ result.analysis_period }}</span>
                     </p>
                 </div>
                 {% endif %}

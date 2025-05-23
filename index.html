@@ -3,82 +3,340 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trendd - Business Analytics</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Dormant Customer Analyzer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="file"], input[type="date"], input[type="text"], select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        input[type="file"]:focus, input[type="date"]:focus, input[type="text"]:focus, select:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+        .date-input {
+            position: relative;
+        }
+        .date-input input[type="text"] {
+            padding-right: 40px;
+        }
+        .date-calendar-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px;
+            color: #666;
+        }
+        .date-calendar-btn:hover {
+            color: #4CAF50;
+        }
+        .hidden-date-picker {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .date-range-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+        .submit-btn:hover {
+            background-color: #45a049;
+        }
+        .info-box {
+            background: #e8f4fd;
+            border: 1px solid #bee5eb;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #0c5460;
+        }
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+        .flash-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <nav class="bg-purple-600 p-4 shadow-md">
-        <div class="container mx-auto">
-            <span class="text-white text-2xl font-bold">Trendd</span>
-        </div>
-    </nav>
-
-    <div class="container mx-auto p-4">
-        <div class="text-center py-10">
-            <h1 class="text-4xl font-bold text-gray-800 mb-4">Transform Your QuickBooks Data Into Business Insights</h1>
-            <p class="text-xl text-gray-600 mb-8">Upload your reports and discover actionable trends</p>
+<body>
+    <div class="container">
+        <h1>Dormant Customer Analyzer</h1>
+        
+        <div class="info-box">
+            <h3>How it works:</h3>
+            <p>1. Upload your QuickBooks customer data (Excel or CSV)</p>
+            <p>2. Select the date range you want to analyze</p>
+            <p>3. The system will find customers who ordered during that period but haven't ordered since</p>
         </div>
 
-        <div class="bg-white rounded-lg shadow-lg p-6 max-w-2xl mx-auto">
-            <h2 class="text-2xl font-semibold mb-4">Upload QuickBooks Report</h2>
-            
+        <!-- Flash messages -->
+        <div class="flash-messages">
             {% with messages = get_flashed_messages() %}
                 {% if messages %}
-                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
-                        <ul>
-                            {% for message in messages %}
-                                <li>{{ message }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
+                    {% for message in messages %}
+                        <div class="flash-error">{{ message }}</div>
+                    {% endfor %}
                 {% endif %}
             {% endwith %}
-            
-            <form action="/upload" method="post" enctype="multipart/form-data" class="space-y-4">
-                <div>
-                    <label for="file" class="block text-gray-700 mb-2">Select CSV Export from QuickBooks</label>
-                    <input type="file" id="file" name="file" accept=".csv,.xlsx,.xls" required
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md"
-                           onchange="updateFileName(this)">
-                    <div id="file-name" class="mt-2 text-sm text-gray-500">No file chosen</div>
-                </div>
+        </div>
+
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="file">Choose your QuickBooks export file:</label>
+                <input type="file" name="file" id="file" accept=".csv,.xlsx,.xls" required>
+            </div>
+
+            <div class="form-group">
+                <label>Choose Date Range:</label>
                 
-                <div class="mt-6">
-                    <label class="block text-gray-700 mb-2">Select Month for Dormant Customer Analysis</label>
-                    <div class="flex flex-col md:flex-row gap-4">
-                        <div class="w-full">
-                            <label for="target_month" class="block text-gray-600 text-sm mb-1">Target Month</label>
-                            
-                            <!-- Use a hidden field with a fixed value, and display-only field for the user -->
-                            <input type="hidden" id="target_month" name="target_month" value="2024-05">
-                            <input type="text" readonly value="May 2024" 
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+                <div class="date-range-container">
+                    <div>
+                        <label for="start_date">Start Date:</label>
+                        <div class="date-input">
+                            <input type="text" name="start_date" id="start_date" value="{{ start_date }}" placeholder="MM/DD/YYYY or type naturally" required>
+                            <button type="button" class="date-calendar-btn" onclick="openCalendar('start_date')">📅</button>
+                            <input type="date" class="hidden-date-picker" id="start_date_picker" onchange="updateFromCalendar('start_date')">
                         </div>
                     </div>
-                    <p class="text-sm text-gray-500 mt-1">Identify customers who ordered during this month but haven't ordered since</p>
+                    <div>
+                        <label for="end_date">End Date:</label>
+                        <div class="date-input">
+                            <input type="text" name="end_date" id="end_date" value="{{ end_date }}" placeholder="MM/DD/YYYY or type naturally" required>
+                            <button type="button" class="date-calendar-btn" onclick="openCalendar('end_date')">📅</button>
+                            <input type="date" class="hidden-date-picker" id="end_date_picker" onchange="updateFromCalendar('end_date')">
+                        </div>
+                    </div>
                 </div>
-                
-                <button type="submit" 
-                    class="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 mt-6">
-                    Upload and Analyze
-                </button>
-            </form>
-        </div>
+            </div>
+
+            <button type="submit" class="submit-btn">Analyze Dormant Customers</button>
+        </form>
     </div>
-    
+
     <script>
-    function updateFileName(input) {
-        const fileNameDisplay = document.getElementById('file-name');
-        if (input.files.length > 0) {
-            fileNameDisplay.textContent = input.files[0].name;
-            fileNameDisplay.classList.add('text-blue-600');
-            fileNameDisplay.classList.remove('text-gray-500');
-        } else {
-            fileNameDisplay.textContent = 'No file chosen';
-            fileNameDisplay.classList.remove('text-blue-600');
-            fileNameDisplay.classList.add('text-gray-500');
+        // Set default dates to last month only if no values are provided
+        window.onload = function() {
+            const startInput = document.getElementById('start_date');
+            const endInput = document.getElementById('end_date');
+            
+            // Only set defaults if the fields are empty
+            if (!startInput.value && !endInput.value) {
+                const today = new Date();
+                const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                
+                startInput.value = formatDateForDisplay(lastMonth);
+                endInput.value = formatDateForDisplay(endOfLastMonth);
+            }
+            
+            // Add input validation and formatting
+            [startInput, endInput].forEach(input => {
+                // Auto-format as user types
+                input.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                    
+                    if (value.length >= 2) {
+                        value = value.substring(0, 2) + '/' + value.substring(2);
+                    }
+                    if (value.length >= 5) {
+                        value = value.substring(0, 5) + '/' + value.substring(5, 9);
+                    }
+                    
+                    e.target.value = value;
+                    this.style.borderColor = '#ddd';
+                });
+                
+                input.addEventListener('blur', function() {
+                    const value = this.value.trim();
+                    if (value) {
+                        const parsedDate = parseFlexibleDate(value);
+                        if (parsedDate) {
+                            this.value = formatDateForDisplay(parsedDate);
+                            this.style.borderColor = '#4CAF50';
+                        } else {
+                            this.style.borderColor = '#ff6b6b';
+                        }
+                    }
+                });
+            });
+        };
+        
+        function formatDateForDisplay(date) {
+            return (date.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+                   date.getDate().toString().padStart(2, '0') + '/' + 
+                   date.getFullYear();
         }
-    }
+        
+        function parseFlexibleDate(dateStr) {
+            // Remove extra spaces and normalize
+            dateStr = dateStr.replace(/\s+/g, ' ').trim();
+            
+            // Try various date formats
+            const formats = [
+                // MM/DD/YYYY or M/D/YYYY
+                /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,
+                // MM-DD-YYYY or M-D-YYYY  
+                /^(\d{1,2})-(\d{1,2})-(\d{4})$/,
+                // YYYY-MM-DD
+                /^(\d{4})-(\d{1,2})-(\d{1,2})$/
+            ];
+            
+            // Try regex patterns first
+            for (let format of formats) {
+                const match = dateStr.match(format);
+                if (match) {
+                    let month, day, year;
+                    if (format.source.startsWith('^(\\d{4})')) {
+                        // YYYY-MM-DD format
+                        year = parseInt(match[1]);
+                        month = parseInt(match[2]) - 1; // JS months are 0-based
+                        day = parseInt(match[3]);
+                    } else {
+                        // MM/DD/YYYY or MM-DD-YYYY format
+                        month = parseInt(match[1]) - 1; // JS months are 0-based
+                        day = parseInt(match[2]);
+                        year = parseInt(match[3]);
+                    }
+                    
+                    const date = new Date(year, month, day);
+                    // Validate the date is real
+                    if (date.getFullYear() === year && date.getMonth() === month && date.getDate() === day) {
+                        return date;
+                    }
+                }
+            }
+            
+            // Try natural language parsing (like "March 15, 2024")
+            try {
+                const date = new Date(dateStr);
+                if (!isNaN(date.getTime()) && date.getFullYear() > 1900) {
+                    return date;
+                }
+            } catch (e) {
+                // Ignore parsing errors
+            }
+            
+            return null;
+        }
+        
+        // Calendar functions
+        function openCalendar(fieldId) {
+            const picker = document.getElementById(fieldId + '_picker');
+            const textInput = document.getElementById(fieldId);
+            
+            // Set current value in calendar if valid
+            const currentDate = parseFlexibleDate(textInput.value);
+            if (currentDate) {
+                picker.value = currentDate.toISOString().split('T')[0];
+            }
+            
+            // Trigger the calendar
+            picker.showPicker();
+        }
+        
+        function updateFromCalendar(fieldId) {
+            const picker = document.getElementById(fieldId + '_picker');
+            const textInput = document.getElementById(fieldId);
+            
+            if (picker.value) {
+                const date = new Date(picker.value + 'T12:00:00'); // Avoid timezone issues
+                textInput.value = formatDateForDisplay(date);
+                textInput.style.borderColor = '#4CAF50';
+            }
+        }
+        
+        // Override form submission to convert dates to YYYY-MM-DD format
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const startInput = document.getElementById('start_date');
+            const endInput = document.getElementById('end_date');
+            
+            const startDate = parseFlexibleDate(startInput.value);
+            const endDate = parseFlexibleDate(endInput.value);
+            
+            if (!startDate) {
+                alert('Please enter a valid start date');
+                e.preventDefault();
+                return;
+            }
+            
+            if (!endDate) {
+                alert('Please enter a valid end date');
+                e.preventDefault();
+                return;
+            }
+            
+            // Convert to YYYY-MM-DD format safely without timezone issues
+            function formatDateForServer(date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+            
+            startInput.value = formatDateForServer(startDate);
+            endInput.value = formatDateForServer(endDate);
+        });
     </script>
 </body>
 </html>

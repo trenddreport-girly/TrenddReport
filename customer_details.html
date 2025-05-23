@@ -1,48 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Customer Details</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body {
-            background-color: transparent;
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-        }
-        .container {
-            padding: 0;
-        }
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .debug { background: #ffffcc; padding: 10px; margin: 10px 0; border: 1px dashed #ccc; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2 class="text-xl font-bold mb-4">{{ customer_name|upper }}'s Last Order</h2>
-        
-        <p class="mb-4"><strong>Order Date:</strong> {{ order_date }}</p>
-        
-        <div class="mb-4">
-            <p class="font-medium">{{ items|length }} Item{{ "s" if items|length != 1 else "" }} in Last Order:</p>
-            <ul class="list-none ml-5 mt-2 space-y-2">
-                {% for item in items %}
-                <li>
-                    <span style="display:inline-block;margin-right:5px;">•</span> {{ item }}
-                </li>
-                {% else %}
-                <li>
-                    <span style="display:inline-block;margin-right:5px;">•</span> No specific items found
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-        
-        <div class="mt-5 text-center">
-            <button onclick="parent.closeModal()" class="bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700">
-                Close
-            </button>
-        </div>
+    <h2>{{ customer_name }}'s Last Order</h2>
+    
+    <p><strong>Order Date:</strong> {{ order_date }}</p>
+    
+    <p><strong>{{ items|length }} Items in Last Order:</strong></p>
+    <ul>
+        {% for item in items %}
+            <li>{{ item }}</li>
+        {% endfor %}
+    </ul>
+    
+    <div style="margin-top: 20px;">
+        <p><strong>Total Orders:</strong> {{ total_orders }}</p>
+        <p><strong>Lifetime Sales:</strong> ${{ "%.2f"|format(lifetime_sales) }}</p>
+    </div>
+    
+    <div class="debug">
+        <h3>DEBUG INFO:</h3>
+        <p>This will show if shipping filtering is working...</p>
+        {% if customer_data and customer_data.debug_info %}
+            {% for debug_line in customer_data.debug_info %}
+                <div>{{ debug_line }}</div>
+            {% endfor %}
+        {% else %}
+            <div>No debug info available</div>
+        {% endif %}
     </div>
 </body>
 </html>

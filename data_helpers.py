@@ -11,12 +11,17 @@ def safe_float_convert(value):
     
     try:
         # Remove currency symbols, commas, and other non-numeric chars (except decimal point)
-        clean_value = str(value).replace('$', '').replace(',', '').strip()
+        clean_value = str(value).replace('$', '').replace(',', '').replace('(', '-').replace(')', '').strip()
         if clean_value == '' or clean_value.lower() == 'nan':
             return 0.0
+        
+        # Handle negative values in parentheses format
+        if clean_value.startswith('-'):
+            return -float(clean_value[1:])
+        
         return float(clean_value)
     except (ValueError, TypeError):
-        print(f"Warning: Could not convert value to float: {value}")
+        print(f"Warning: Could not convert value to float: '{value}' -> '{clean_value}'")
         return 0.0
 
 def format_date(date_val):
@@ -39,7 +44,7 @@ def is_valid_customer(name):
         
     # Check if it's just a number
     try:
-        float(name_str)
+        float(name_str.replace(',', ''))
         return False  # It's just a number, not a valid customer name
     except:
         pass
@@ -52,7 +57,13 @@ def is_shipping_item(item):
         return False
     
     item_str = str(item).strip().lower()
-    return 'shipping' in item_str or 'ship' in item_str or 'postage' in item_str or 'delivery' in item_str
+    shipping_keywords = ['shipping', 'ship', 'postage', 'delivery', 'freight', 'handling']
+    
+    for keyword in shipping_keywords:
+        if keyword in item_str:
+            return True
+            
+    return False
 
 def is_total_row(row, customer_col, type_col=None):
     """Check if a row is a 'Total' summary row for a customer."""
